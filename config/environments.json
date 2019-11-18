@@ -3,20 +3,29 @@
 		{"ip":"192.168.0.107", 
 		"codepath":"/var/www/it490-proj",
 		"archivepath":"/var/www/it490-proj-prev",
+		"sftp_user": "deployment",
+		"sftp_pw": "87C473EDC3",
 		"subdirs":["frontend_code"]},
 	"database":
 		{"ip":"192.168.0.103",
 		"codepath":"/code/it490-proj",
 		"archivepath":"/code/it490-proj-prev",
-		"subdirs":["database_code","databse_scripts"]},
+		"sftp_user": "deployment",
+		"sftp_pw": "87C473EDC3",
+		"subdirs":["database_code","database_scripts"]},
 	"rabbitmq":
 		{"ip":"192.168.0.105",
 		"codepath":"code/it490-proj",
 		"archivepath":"/code/it490-proj-prev",
+		"sftp_user": "deployment",
+		"sftp_pw": "87C473EDC3",
 		"subdirs":["rabbitmq_code"]}, 
 	"dmz":
-		{"codepath":"/code/it490-proj",
+		{"ip":"192.168.1.108",
+		"codepath":"/code/it490-proj",
 		"archivepath":"/code/it490-proj-prev",
+		"sftp_user": "deployment",
+		"sftp_pw": "87C473EDC3",
 		"subdirs":["dmz_code"]}
 	}
 }
