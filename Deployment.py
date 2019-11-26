@@ -8,7 +8,7 @@ def checkInt(i, lo, hi):
     r1 = True
     try:
         int(i)
-        r1 = (lo >= int(i) >= hi)
+        r1 = (hi >= int(i) >= lo)
     except ValueError:
         return False
     return r1
@@ -18,29 +18,46 @@ def getFiles():
     os.rename("cache-dir-prev", "cache-dir_" + ts)
     os.rename("cache-dir", "cache-dir-prev")
     os.mkdir("cache-dir")
-    with pysftp.Connection(config["environments"]["frontend"]["ip"],
+    c1 = pysftp.Connection(config["environments"]["frontend"]["ip"],
                            username=config["environments"]["frontend"]["sftp_user"],
-                           password=config["environments"]["frontend"]["sftp_pw"]) as c1:
-        for i in config["environments"]["frontend"]["subdirs"]:
-            c1.get_r(i, "cache-dir/" + i)
+                           password=config["environments"]["frontend"]["sftp_pw"], cnopts=cnopts)
+    for i in config["environments"]["frontend"]["subdirs"]:
+        d = config["environments"]["frontend"]["codepath"] + "/" + i
+        # print(d)
+        os.mkdir("cache-dir/" + i)
+        # print("cache-dir/"+i)
+        c1.get_r(d, "cache-dir/" + i)
+        # print("done with "+i)
 
-    with pysftp.Connection(config["environments"]["database"]["ip"],
+    c2 = pysftp.Connection(config["environments"]["database"]["ip"],
                            username=config["environments"]["database"]["sftp_user"],
-                           password=config["environments"]["database"]["sftp_pw"]) as c2:
-        for i in config["environments"]["frontend"]["subdirs"]:
-            c2.get_r(i, "cache-dir/" + i)
+                           password=config["environments"]["database"]["sftp_pw"], cnopts=cnopts)
+    for i in config["environments"]["database"]["subdirs"]:
+        d = config["environments"]["database"]["codepath"] + "/" + i
+        print(d)
+        os.mkdir("cache-dir/" + i)
+        print("cache-dir/" + i)
+        c2.get_r(d, "cache-dir/" + i)
+        print("done with " + i)
 
-    with pysftp.Connection(config["environments"]["rabbitmq"]["ip"],
+    c3 = pysftp.Connection(config["environments"]["rabbitmq"]["ip"],
                            username=config["environments"]["rabbitmq"]["sftp_user"],
-                           password=config["environments"]["rabbitmq"]["sftp_pw"]) as c3:
-        for i in config["environments"]["frontend"]["subdirs"]:
-            c3.get_r(i, "cache-dir/" + i)
+                           password=config["environments"]["rabbitmq"]["sftp_pw"], cnopts=cnopts)
+    for i in config["environments"]["rabbitmq"]["subdirs"]:
+        d = config["environments"]["rabbitmq"]["codepath"] + "/" + i
+        print(d)
+        os.mkdir("cache-dir/" + i)
+        print("cache-dir/" + i)
+        c3.get_r(d, "cache-dir/" + i)
+        print("done with " + i)
 
-    with pysftp.Connection(config["environments"]["dmz"]["ip"],
+    c4 = pysftp.Connection(config["environments"]["dmz"]["ip"],
                            username=config["environments"]["dmz"]["sftp_user"],
-                           password=config["environments"]["dmz"]["sftp_pw"]) as c4:
-        for i in config["environments"]["frontend"]["subdirs"]:
-            c4.get_r(i, "cache-dir/" + i)
+                           password=config["environments"]["dmz"]["sftp_pw"], cnopts=cnopts)
+    for i in config["environments"]["dmz"]["subdirs"]:
+        d = config["environments"]["dmz"]["codepath"] + "/" + i
+        os.mkdir("cache-dir/" + i)
+        c4.get_r(d, "cache-dir/" + i)
     print("Cache Directory updated")
 
 
@@ -53,37 +70,42 @@ def pushFiles(flag):
         sourcedir = flag
     with pysftp.Connection(config["environments"]["frontend"]["ip"],
                            username=config["environments"]["frontend"]["sftp_user"],
-                           password=config["environments"]["frontend"]["sftp_pw"]) as c1:
+                           password=config["environments"]["frontend"]["sftp_pw"], cnopts=cnopts) as c1:
         for i in config["environments"]["frontend"]["subdirs"]:
+            d = config["environments"]["dmz"] + i
             c1.remove(sourcedir + "/" + i)
             c1.put_r(sourcedir + "/" + i, i)
 
     with pysftp.Connection(config["environments"]["database"]["ip"],
                            username=config["environments"]["database"]["sftp_user"],
-                           password=config["environments"]["database"]["sftp_pw"]) as c2:
+                           password=config["environments"]["database"]["sftp_pw"], cnopts=cnopts) as c2:
         for i in config["environments"]["frontend"]["subdirs"]:
             c2.remove(sourcedir + "/" + i)
             c2.put_r(sourcedir + "/" + i, i)
 
     with pysftp.Connection(config["environments"]["rabbitmq"]["ip"],
                            username=config["environments"]["rabbitmq"]["sftp_user"],
-                           password=config["environments"]["rabbitmq"]["sftp_pw"]) as c3:
+                           password=config["environments"]["rabbitmq"]["sftp_pw"], cnopts=cnopts) as c3:
         for i in config["environments"]["frontend"]["subdirs"]:
             c3.remove(sourcedir + "/" + i)
             c3.put_r(sourcedir + "/" + i, i)
 
     with pysftp.Connection(config["environments"]["dmz"]["ip"],
                            username=config["environments"]["dmz"]["sftp_user"],
-                           password=config["environments"]["dmz"]["sftp_pw"]) as c4:
+                           password=config["environments"]["dmz"]["sftp_pw"], cnopts=cnopts) as c4:
         for i in config["environments"]["frontend"]["subdirs"]:
             c4.remove(sourcedir + "/" + i)
             c4.put_r(sourcedir + "/" + i, i)
 
 
 # Get my globals in order
-config_tmp = open("config/environments.json", "r")
-config = json.loads(config_tmp)
-config_tmp.close()
+cwd = os.getcwd()
+with open(cwd + '/config/environments.json') as config_tmp:
+    # config_tmp = open("config/environments.json", "r")
+    config = json.load(config_tmp)
+
+cnopts = pysftp.CnOpts()
+cnopts.hostkeys = None
 
 # menu: select push, pull, revert, view versions
 print("Welcome to the IT490 Code Promotion System. I couldn't find anything that did the thing I needed out of the box")
@@ -91,7 +113,7 @@ print("  so I wrote my own! ")
 print(" ")
 keepgoing = True
 while keepgoing:
-    ts_tmp = datetime.now()
+    ts_tmp = datetime.datetime.now()
     ts = ts_tmp.strftime("%Y%m%d_%H%M%S")
     print("--------------------------------------------------------------")
     print("--Please listen carefully, as our menu options have changed---")
