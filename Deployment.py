@@ -15,50 +15,55 @@ def checkInt(i, lo, hi):
 
 
 def getFiles():
-    os.rename("cache-dir-prev", "cache-dir_" + ts)
-    os.rename("cache-dir", "cache-dir-prev")
     os.mkdir("cache-dir")
     c1 = pysftp.Connection(config["environments"]["frontend"]["ip"],
                            username=config["environments"]["frontend"]["sftp_user"],
                            password=config["environments"]["frontend"]["sftp_pw"], cnopts=cnopts)
     for i in config["environments"]["frontend"]["subdirs"]:
-        d = config["environments"]["frontend"]["codepath"] + "/" + i
+        d = config["environments"]["frontend"]["codepath"]
         # print(d)
         os.mkdir("cache-dir/" + i)
         # print("cache-dir/"+i)
-        c1.get_r(d, "cache-dir/" + i)
+        c1.chdir(d)
+        c1.get_r(i, "cache-dir")
         # print("done with "+i)
 
     c2 = pysftp.Connection(config["environments"]["database"]["ip"],
                            username=config["environments"]["database"]["sftp_user"],
                            password=config["environments"]["database"]["sftp_pw"], cnopts=cnopts)
     for i in config["environments"]["database"]["subdirs"]:
-        d = config["environments"]["database"]["codepath"] + "/" + i
-        print(d)
+        d = config["environments"]["database"]["codepath"]
+        # print(d)
         os.mkdir("cache-dir/" + i)
-        print("cache-dir/" + i)
-        c2.get_r(d, "cache-dir/" + i)
-        print("done with " + i)
+        # print("cache-dir/" + i)
+        c2.chdir(d)
+        c2.get_r(i, "cache-dir")
+        # print("done with " + i)
 
     c3 = pysftp.Connection(config["environments"]["rabbitmq"]["ip"],
                            username=config["environments"]["rabbitmq"]["sftp_user"],
                            password=config["environments"]["rabbitmq"]["sftp_pw"], cnopts=cnopts)
     for i in config["environments"]["rabbitmq"]["subdirs"]:
-        d = config["environments"]["rabbitmq"]["codepath"] + "/" + i
-        print(d)
+        d = config["environments"]["rabbitmq"]["codepath"]
+        # print(d)
         os.mkdir("cache-dir/" + i)
-        print("cache-dir/" + i)
-        c3.get_r(d, "cache-dir/" + i)
-        print("done with " + i)
+        # print("cache-dir/" + i)
+        c3.chdir(d)
+        c3.get_r(i, "cache-dir")
+        # print("done with " + i)
 
     c4 = pysftp.Connection(config["environments"]["dmz"]["ip"],
                            username=config["environments"]["dmz"]["sftp_user"],
                            password=config["environments"]["dmz"]["sftp_pw"], cnopts=cnopts)
     for i in config["environments"]["dmz"]["subdirs"]:
-        d = config["environments"]["dmz"]["codepath"] + "/" + i
+        d = config["environments"]["dmz"]["codepath"]
         os.mkdir("cache-dir/" + i)
-        c4.get_r(d, "cache-dir/" + i)
+        c4.chdir(d)
+        c4.get_r(d, "cache-dir")
+
     print("Cache Directory updated")
+    os.rename("cache-dir", "ver__" + ts)
+    print("new version stored: ver__" + ts)
 
 
 def pushFiles(flag):
