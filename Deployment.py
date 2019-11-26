@@ -15,6 +15,9 @@ def checkInt(i, lo, hi):
 
 
 def getFiles():
+    if os.path.exists("cache-dir"):
+        os.rmdir("cache-dir")
+
     os.mkdir("cache-dir")
     c1 = pysftp.Connection(config["environments"]["frontend"]["ip"],
                            username=config["environments"]["frontend"]["sftp_user"],
@@ -60,47 +63,92 @@ def getFiles():
         os.mkdir("cache-dir/" + i)
         c4.chdir(d)
         c4.get_r(d, "cache-dir")
-
     print("Cache Directory updated")
-    os.rename("cache-dir", "ver__" + ts)
-    print("new version stored: ver__" + ts)
+    c1.close()
+    c2.close()
+    c3.close()
+    c4.close()
+    version_id = "ver__" + ts
+    os.rename("cache-dir", version_id)
+    print("new version stored: " + version_id)
+    fi = open("last_pull.txt", "wt")
+    fi.write(version_id)
+    fi.close()
 
 
 def pushFiles(flag):
+    ver = []
+    i = 0
+    for dirs in os.listdir():
+        if "ver__" in dirs and os.listdir(dirs):
+            # If the directory is empty or not named ver__* (we dont want to push config lol) then dont
+            # display it
+            # print(str(i) + "-  /" + dirs)
+            ver.append(dirs)
+            i += 1
+    print(" ")
+    if i == 0:
+        print("There's no code pulled into the repository, try doing that first")
+        return 0
     if flag == "P":  # Promotion
-        sourcedir = "cache-dir"
+        fi = open("config/last_pull.txt", "rt")
+        sourcedir = fi.readline()
+        fi.close()
     elif flag == "R":  # Revert to Last
-        sourcedir = "cache-dir-prev"
+        fi = open("config/revert_push.txt", "rt")
+        sourcedir = fi.readline()
+        fi.close()
     else:
         sourcedir = flag
-    with pysftp.Connection(config["environments"]["frontend"]["ip"],
+
+    # still need to test this
+    c1 = pysftp.Connection(config["environments"]["frontend"]["ip"],
                            username=config["environments"]["frontend"]["sftp_user"],
-                           password=config["environments"]["frontend"]["sftp_pw"], cnopts=cnopts) as c1:
-        for i in config["environments"]["frontend"]["subdirs"]:
-            d = config["environments"]["dmz"] + i
-            c1.remove(sourcedir + "/" + i)
-            c1.put_r(sourcedir + "/" + i, i)
+                           password=config["environments"]["frontend"]["sftp_pw"], cnopts=cnopts)
+    for i in config["environments"]["frontend"]["subdirs"]:
+        d = config["environments"]["frontend"]["codepath"]
+        c1.chdir(d)
+        c1.remove(i)
+        c1.mkdir(i)
+        c1.put_r(i, i)
 
-    with pysftp.Connection(config["environments"]["database"]["ip"],
+    c2 = pysftp.Connection(config["environments"]["database"]["ip"],
                            username=config["environments"]["database"]["sftp_user"],
-                           password=config["environments"]["database"]["sftp_pw"], cnopts=cnopts) as c2:
-        for i in config["environments"]["frontend"]["subdirs"]:
-            c2.remove(sourcedir + "/" + i)
-            c2.put_r(sourcedir + "/" + i, i)
+                           password=config["environments"]["database"]["sftp_pw"], cnopts=cnopts)
+    for i in config["environments"]["frontend"]["subdirs"]:
+        d = config["environments"]["database"]["codepath"]
+        c2.chdir(d)
+        c2.remove(i)
+        c2.mkdir(i)
+        c2.put_r(i, i)
 
-    with pysftp.Connection(config["environments"]["rabbitmq"]["ip"],
+    c3 = pysftp.Connection(config["environments"]["rabbitmq"]["ip"],
                            username=config["environments"]["rabbitmq"]["sftp_user"],
-                           password=config["environments"]["rabbitmq"]["sftp_pw"], cnopts=cnopts) as c3:
-        for i in config["environments"]["frontend"]["subdirs"]:
-            c3.remove(sourcedir + "/" + i)
-            c3.put_r(sourcedir + "/" + i, i)
+                           password=config["environments"]["rabbitmq"]["sftp_pw"], cnopts=cnopts)
+    for i in config["environments"]["frontend"]["subdirs"]:
+        d = config["environments"]["rabbitmq"]["codepath"]
+        c3.chdir(d)
+        c3.remove(i)
+        c3.mkdir(i)
+        c3.put_r(i, i)
 
-    with pysftp.Connection(config["environments"]["dmz"]["ip"],
+    c4 = pysftp.Connection(config["environments"]["dmz"]["ip"],
                            username=config["environments"]["dmz"]["sftp_user"],
-                           password=config["environments"]["dmz"]["sftp_pw"], cnopts=cnopts) as c4:
-        for i in config["environments"]["frontend"]["subdirs"]:
-            c4.remove(sourcedir + "/" + i)
-            c4.put_r(sourcedir + "/" + i, i)
+                           password=config["environments"]["dmz"]["sftp_pw"], cnopts=cnopts)
+    for i in config["environments"]["frontend"]["subdirs"]:
+        d = config["environments"]["dmz"]["codepath"]
+        c4.chdir(d)
+        c4.remove(i)
+        c4.mkdir(i)
+        c4.put_r(i, i)
+
+    fi_revert = open("config/revert_push.txt", "wt")
+    fi_push = open("config/last_push.txt", "wt")
+    revert_ver = fi_push.readline()
+    fi_revert.write(revert_ver)
+    fi_push.write(sourcedir)
+    fi_push.close()
+    fi_revert.close()
 
 
 # Get my globals in order
@@ -141,8 +189,9 @@ while keepgoing:
             keepgoing = False
         elif u == 1:
             for dirs in os.listdir():
-                if "cache-dir" in dirs:
+                if "ver__" in dirs and os.listdir(dirs):
                     print(dirs)
+            print(" ")
         elif u == 2:
             print("Attempting to pull the code in from the various VM's.")
             getFiles()
@@ -168,8 +217,8 @@ while keepgoing:
             ver = []
             i = 0
             for dirs in os.listdir():
-                if "cache-dir" in dirs and os.listdir(dirs):
-                    # If the directory is empty or not named cache-dir* (we dont want to push config lol) then dont
+                if "ver__" in dirs and os.listdir(dirs):
+                    # If the directory is empty or not named ver__* (we dont want to push config lol) then dont
                     # display it
                     print(str(i) + "-  /" + dirs)
                     ver.append(dirs)
