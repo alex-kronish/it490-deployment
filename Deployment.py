@@ -1,3 +1,4 @@
+import shutil
 import pysftp
 import datetime
 import json
@@ -16,28 +17,32 @@ def checkInt(i, lo, hi):
 
 def getFiles():
     if os.path.exists("cache-dir"):
-        os.rmdir("cache-dir")
-
+        shutil.rmtree("cache-dir")
+        print("Deleted leftover directory")
     os.mkdir("cache-dir")
-    c1 = pysftp.Connection(config["environments"]["frontend"]["ip"],
+    print("Created temp directory")
+    c1 = pysftp.Connection(config["environments"]["database"]["ip"],
                            username=config["environments"]["frontend"]["sftp_user"],
                            password=config["environments"]["frontend"]["sftp_pw"], cnopts=cnopts)
+    # c1 = pysftp.Connection("192.168.2.122",username="alex",password="*****", cnopts=cnopts)
+    # sub = ["folder1", "folder2"]
+    # for i in sub:
     for i in config["environments"]["frontend"]["subdirs"]:
         d = config["environments"]["frontend"]["codepath"]
-        # print(d)
-        os.mkdir("cache-dir/" + i)
+        print(d)
+        # os.mkdir("cache-dir/" + i)
         # print("cache-dir/"+i)
         c1.chdir(d)
         c1.get_r(i, "cache-dir")
         # print("done with "+i)
-
-    c2 = pysftp.Connection(config["environments"]["database"]["ip"],
+    # return
+    c2 = pysftp.Connection(config["environments"]["frontend"]["ip"],
                            username=config["environments"]["database"]["sftp_user"],
                            password=config["environments"]["database"]["sftp_pw"], cnopts=cnopts)
     for i in config["environments"]["database"]["subdirs"]:
         d = config["environments"]["database"]["codepath"]
-        # print(d)
-        os.mkdir("cache-dir/" + i)
+        print(d)
+        # os.mkdir("cache-dir/" + i)
         # print("cache-dir/" + i)
         c2.chdir(d)
         c2.get_r(i, "cache-dir")
@@ -48,8 +53,8 @@ def getFiles():
                            password=config["environments"]["rabbitmq"]["sftp_pw"], cnopts=cnopts)
     for i in config["environments"]["rabbitmq"]["subdirs"]:
         d = config["environments"]["rabbitmq"]["codepath"]
-        # print(d)
-        os.mkdir("cache-dir/" + i)
+        print(d)
+        # os.mkdir("cache-dir/" + i)
         # print("cache-dir/" + i)
         c3.chdir(d)
         c3.get_r(i, "cache-dir")
@@ -60,10 +65,11 @@ def getFiles():
                            password=config["environments"]["dmz"]["sftp_pw"], cnopts=cnopts)
     for i in config["environments"]["dmz"]["subdirs"]:
         d = config["environments"]["dmz"]["codepath"]
-        os.mkdir("cache-dir/" + i)
+        print(d)
+        # os.mkdir("cache-dir/" + i)
         c4.chdir(d)
-        c4.get_r(d, "cache-dir")
-    print("Cache Directory updated")
+        c4.get_r(i, "cache-dir")
+    print("Cache Directory updated. Terminating SFTP connections.")
     c1.close()
     c2.close()
     c3.close()
@@ -110,7 +116,7 @@ def pushFiles(flag):
         c1.chdir(d)
         c1.remove(i)
         c1.mkdir(i)
-        c1.put_r(i, i)
+        c1.put_r(sourcedir+"/"+i, i)
 
     c2 = pysftp.Connection(config["environments"]["database"]["ip"],
                            username=config["environments"]["database"]["sftp_user"],
@@ -120,7 +126,7 @@ def pushFiles(flag):
         c2.chdir(d)
         c2.remove(i)
         c2.mkdir(i)
-        c2.put_r(i, i)
+        c2.put_r(sourcedir+"/"+i, i)
 
     c3 = pysftp.Connection(config["environments"]["rabbitmq"]["ip"],
                            username=config["environments"]["rabbitmq"]["sftp_user"],
@@ -130,7 +136,7 @@ def pushFiles(flag):
         c3.chdir(d)
         c3.remove(i)
         c3.mkdir(i)
-        c3.put_r(i, i)
+        c3.put_r(sourcedir+"/"+i, i)
 
     c4 = pysftp.Connection(config["environments"]["dmz"]["ip"],
                            username=config["environments"]["dmz"]["sftp_user"],
@@ -140,7 +146,7 @@ def pushFiles(flag):
         c4.chdir(d)
         c4.remove(i)
         c4.mkdir(i)
-        c4.put_r(i, i)
+        c4.put_r(sourcedir+"/"+i, i)
 
     fi_revert = open("config/revert_push.txt", "wt")
     fi_push = open("config/last_push.txt", "wt")
