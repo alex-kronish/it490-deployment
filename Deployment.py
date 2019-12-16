@@ -21,22 +21,17 @@ def getFiles():
         print("Deleted leftover directory")
     os.mkdir("cache-dir")
     print("Created temp directory")
-    c1 = pysftp.Connection(config["environments"]["database"]["ip"],
+    c1 = pysftp.Connection(config["environments"]["frontend"]["ip"],
                            username=config["environments"]["frontend"]["sftp_user"],
                            password=config["environments"]["frontend"]["sftp_pw"], cnopts=cnopts)
-    # c1 = pysftp.Connection("192.168.2.122",username="alex",password="*****", cnopts=cnopts)
-    # sub = ["folder1", "folder2"]
-    # for i in sub:
     for i in config["environments"]["frontend"]["subdirs"]:
         d = config["environments"]["frontend"]["codepath"]
         print(d)
-        # os.mkdir("cache-dir/" + i)
-        # print("cache-dir/"+i)
         c1.chdir(d)
         c1.get_r(i, "cache-dir")
         # print("done with "+i)
     # return
-    c2 = pysftp.Connection(config["environments"]["frontend"]["ip"],
+    c2 = pysftp.Connection(config["environments"]["database"]["ip"],
                            username=config["environments"]["database"]["sftp_user"],
                            password=config["environments"]["database"]["sftp_pw"], cnopts=cnopts)
     for i in config["environments"]["database"]["subdirs"]:
@@ -77,7 +72,7 @@ def getFiles():
     version_id = "ver__" + ts
     os.rename("cache-dir", version_id)
     print("new version stored: " + version_id)
-    fi = open("last_pull.txt", "wt")
+    fi = open("config/last_pull.txt", "wt")
     fi.write(version_id)
     fi.close()
 
@@ -99,6 +94,7 @@ def pushFiles(flag):
     if flag == "P":  # Promotion
         fi = open("config/last_pull.txt", "rt")
         sourcedir = fi.readline()
+        print(sourcedir)
         fi.close()
     elif flag == "R":  # Revert to Last
         fi = open("config/revert_push.txt", "rt")
@@ -114,29 +110,25 @@ def pushFiles(flag):
     for i in config["environments"]["frontend"]["subdirs"]:
         d = config["environments"]["frontend"]["codepath"]
         c1.chdir(d)
-        c1.remove(i)
-        c1.mkdir(i)
-        c1.put_r(sourcedir+"/"+i, i)
+        print(d)
+        c1.put_r(sourcedir + "/" + i, i)
 
     c2 = pysftp.Connection(config["environments"]["database"]["ip"],
                            username=config["environments"]["database"]["sftp_user"],
                            password=config["environments"]["database"]["sftp_pw"], cnopts=cnopts)
-    for i in config["environments"]["frontend"]["subdirs"]:
+    for i in config["environments"]["database"]["subdirs"]:
         d = config["environments"]["database"]["codepath"]
         c2.chdir(d)
-        c2.remove(i)
-        c2.mkdir(i)
-        c2.put_r(sourcedir+"/"+i, i)
+        c2.put_r(sourcedir + "/" + i, i)
 
     c3 = pysftp.Connection(config["environments"]["rabbitmq"]["ip"],
                            username=config["environments"]["rabbitmq"]["sftp_user"],
                            password=config["environments"]["rabbitmq"]["sftp_pw"], cnopts=cnopts)
-    for i in config["environments"]["frontend"]["subdirs"]:
+    for i in config["environments"]["rabbitmq"]["subdirs"]:
         d = config["environments"]["rabbitmq"]["codepath"]
         c3.chdir(d)
-        c3.remove(i)
-        c3.mkdir(i)
-        c3.put_r(sourcedir+"/"+i, i)
+        print(d)
+        c3.put_r(sourcedir + "/" + i, i)
 
     c4 = pysftp.Connection(config["environments"]["dmz"]["ip"],
                            username=config["environments"]["dmz"]["sftp_user"],
@@ -144,13 +136,14 @@ def pushFiles(flag):
     for i in config["environments"]["frontend"]["subdirs"]:
         d = config["environments"]["dmz"]["codepath"]
         c4.chdir(d)
-        c4.remove(i)
-        c4.mkdir(i)
-        c4.put_r(sourcedir+"/"+i, i)
+        c4.put_r(sourcedir + "/" + i, i)
 
     fi_revert = open("config/revert_push.txt", "wt")
+    fi_push_tmp = open("config/last_push.txt", "rt")
+    revert_ver = fi_push_tmp.readline()
+    fi_push_tmp.close()
     fi_push = open("config/last_push.txt", "wt")
-    revert_ver = fi_push.readline()
+    # revert_ver = fi_push.readline()
     fi_revert.write(revert_ver)
     fi_push.write(sourcedir)
     fi_push.close()
@@ -249,4 +242,6 @@ while keepgoing:
                     print("Aren't you glad I stopped you?")
                 else:
                     print("THE CONTRACT IS SEALED")
-                    pushFiles(ver[txt3])
+                    vertxt = ver[int(txt3)]
+                    print("Using version ID: "+vertxt)
+                    pushFiles(vertxt)
